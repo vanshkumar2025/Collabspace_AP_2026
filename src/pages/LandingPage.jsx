@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
 import SimpleBackground from '../components/SimpleBackground';
 import WorkspaceModal from '../components/WorkspaceModal';
 import logoImg from '../images/Logo.png';
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const { user, loading, logout } = useAuth();
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [workspaceMode, setWorkspaceMode] = useState('register');
 
   const openWorkspace = (mode) => {
+    if (user) {
+      navigate('/home');
+      return;
+    }
     setWorkspaceMode(mode);
     setWorkspaceOpen(true);
   };
@@ -67,12 +75,30 @@ export default function LandingPage() {
 
           <div className="header-actions">
             <ThemeToggle />
-            <button className="btn btn-ghost" type="button" onClick={() => openWorkspace('login')}>
-              Log In
-            </button>
-            <button className="btn btn-primary" type="button" onClick={() => openWorkspace('register')}>
-              Deploy Workspace
-            </button>
+            {loading && !user ? (
+              <span className="user-chip" style={{ opacity: 0.6 }}>Loading...</span>
+            ) : user ? (
+              <>
+                <span className="user-chip" title={user.email}>
+                  <span className="greeting-text">Hi, {user.name ? user.name.split(' ')[0] : 'there'}</span>
+                </span>
+                <button className="btn btn-primary" type="button" onClick={() => navigate('/home')}>
+                  Open Workspace
+                </button>
+                <button className="btn btn-ghost" type="button" onClick={logout}>
+                  Log Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-ghost" type="button" onClick={() => openWorkspace('login')}>
+                  Log In
+                </button>
+                <button className="btn btn-primary" type="button" onClick={() => openWorkspace('register')}>
+                  Deploy Workspace
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -282,12 +308,25 @@ export default function LandingPage() {
               <h2>Let's build something cool</h2>
               <p>Set up your team's workspace and try out CollabSpace for your next big assignment.</p>
               <div className="cta-actions">
-                <button className="btn btn-primary" type="button" onClick={() => openWorkspace('register')}>
-                  Create Workspace →
-                </button>
-                <button className="btn btn-secondary" type="button" onClick={() => openWorkspace('login')}>
-                  Log In
-                </button>
+                {user ? (
+                  <>
+                    <button className="btn btn-primary" type="button" onClick={() => navigate('/home')}>
+                      Open Workspace →
+                    </button>
+                    <button className="btn btn-secondary" type="button" onClick={logout}>
+                      Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button className="btn btn-primary" type="button" onClick={() => openWorkspace('register')}>
+                      Create Workspace →
+                    </button>
+                    <button className="btn btn-secondary" type="button" onClick={() => openWorkspace('login')}>
+                      Log In
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

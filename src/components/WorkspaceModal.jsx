@@ -1,25 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth, api } from '../context/AuthContext';
 import './workspace-modal.css';
-
-async function api(path, options = {}) {
-  const response = await fetch(path, {
-    credentials: 'same-origin',
-    ...options,
-    headers: {
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...options.headers,
-    },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
-  return data;
-}
 
 const tabs = ['Overview', 'Tasks', 'Chat', 'Team', 'Ratings'];
 
 export default function WorkspaceModal({ open, onClose, initialMode = 'register' }) {
+  const navigate = useNavigate();
+  const { user, setUser, logout, login, register } = useAuth();
   const [mode, setMode] = useState(initialMode);
-  const [user, setUser] = useState(null);
   const [workspaces, setWorkspaces] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [workspaceInvitations, setWorkspaceInvitations] = useState([]);
@@ -148,10 +137,13 @@ export default function WorkspaceModal({ open, onClose, initialMode = 'register'
     setBusy(true);
     const body = Object.fromEntries(new FormData(event.currentTarget).entries());
     try {
-      const route = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
-      const result = await api(route, { method: 'POST', body: JSON.stringify(body) });
-      setUser(result.user);
-      await loadWorkspaces();
+      if (mode === 'register') {
+        await register(body);
+      } else {
+        await login(body.email, body.password);
+      }
+      onClose();
+      navigate('/home');
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -372,8 +364,7 @@ export default function WorkspaceModal({ open, onClose, initialMode = 'register'
   }
 
   async function handleLogout() {
-    try { await api('/api/auth/logout', { method: 'POST' }); } catch { /* Clear the local view either way. */ }
-    setUser(null);
+    await logout();
     setWorkspaces([]);
     setInvitations([]);
     setSelectedWorkspace(null);
